@@ -2,6 +2,8 @@ package gov.usgs.NetRSFileMover;
 
 import gov.usgs.util.ConfigFile;
 
+import java.util.Iterator;
+import java.util.LinkedList;
 import java.util.List;
 
 /**
@@ -23,7 +25,13 @@ public final class NetRSFileMover {
 	 */
 	public NetRSFileMover(ConfigFile cf) {
 		
-		for (String receiver : cf.getList("receivers")) {
+		List<String> receiverList = cf.getList("receiver");
+		receivers = new LinkedList<NetRSConnection>();
+		
+		if (receiverList == null || receiverList.size() == 0)
+			throw new RuntimeException("Didn't find any receiver directives.");	
+		
+		for (String receiver : cf.getList("receiver")) {
 			
 			NetRSSettings settings = new NetRSSettings(receiver,
 					cf.getSubConfig(receiver, true));
@@ -38,11 +46,13 @@ public final class NetRSFileMover {
 	 */
 	private void go() {
 		while (!receivers.isEmpty()) {
-			for (NetRSConnection receiver : receivers) {
+			Iterator<NetRSConnection> it = receivers.iterator();
+			while (it.hasNext()) {
+				NetRSConnection receiver = it.next();
 				receiver.poll();
-
+				
 				if (receiver.polledLast())
-					receivers.remove(receiver);
+					it.remove();
 			}
 		}
 	}
@@ -53,7 +63,15 @@ public final class NetRSFileMover {
 	 * @param args
 	 */
 	public static void main(String[] args) {
+		
+		if (args.length != 1)
+			throw new RuntimeException("Usage: NetRSFileMover <config>");
+			
 		ConfigFile cf = new ConfigFile(args[0]);
+		
+		if (!cf.wasSuccessfullyRead())
+			throw new RuntimeException("Can't read config file " + args[0]);
+		
 		NetRSFileMover arch = new NetRSFileMover(cf);
 		arch.go();
 	}

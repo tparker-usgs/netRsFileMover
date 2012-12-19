@@ -25,6 +25,7 @@ public class NetRSSettings {
 	public static final String DEFAULT_DATA_FORMAT = "T00";
 	public static final String DEFAULT_OUTPUT_DIR = "output";
 	public static final boolean DEFAULT_DEPTH_FIRST = false;
+	public static final int DEFAULT_CONNECT_TIMEOUT = 30;
 
 	public final String userName;
 	public final String password;
@@ -41,6 +42,7 @@ public class NetRSSettings {
 	public final String fileNameFormat;
 	public final String outputDir;
 	public final boolean depthFirst;
+	public final int connectTimeout;
 
 	public NetRSSettings(String systemName, ConfigFile cf) {
 		this.systemName = systemName;
@@ -65,17 +67,19 @@ public class NetRSSettings {
 				DEFAULT_DO_DELETE);
 		duration = Util.stringToInt(cf.getString("duration"), DEFAULT_DURATION);
 		usePerDaySubdirectories = Util.stringToBoolean(
-				cf.getString("usePerDaySubdirectories"),
+				cf.getString("perDaySubdirectories"),
 				DEFAULT_USE_PER_DAY_SUBDIRECTORIES);
 		usePerSessionIdSubdirectories = Util.stringToBoolean(
-				cf.getString("usePerSessionIdSubdirectories"),
+				cf.getString("perSessionIdSubdirectories"),
 				DEFAULT_USE_PER_SESSION_ID_SUBDIRECTORIES);
 		maxBackfill = Util.stringToInt(cf.getString("maxBackfill"),
 				DEFAULT_MAX_BACKFILL);
 
+		connectTimeout = Util.stringToInt(cf.getString("connectTimeout"), DEFAULT_CONNECT_TIMEOUT);
+		
 		sessionId = Util.stringToString(cf.getString("sessionId"),
 				DEFAULT_SESSION_ID);
-		if (!sessionId.matches("^a-z$"))
+		if (!sessionId.matches("^[a-z]$"))
 			throw new RuntimeException(
 					"sessionId must be a single lowercase letter. " + sessionId
 							+ " won't work.");
@@ -93,10 +97,8 @@ public class NetRSSettings {
 				DEFAULT_OUTPUT_DIR);
 		File f = new File(outputDir);
 		if (!f.exists())
-			throw new RuntimeException("outputDir " + outputDir
-					+ " doesn't exist. Won't try to pull files from "
-					+ systemName);
-
+			f.mkdir();
+		
 		fileNameFormat = getFileNameFormat();
 	}
 
@@ -110,8 +112,8 @@ public class NetRSSettings {
 		if (usePerSessionIdSubdirectories)
 			format.append("'" + sessionId + "'/");
 
-		format.append("'" + systemName + "'yyyyMMddhhMM'" + sessionId + "."
-				+ dataFormat);
+		format.append("'" + systemName + "'yyyyMMddHHmm'" + sessionId + "."
+				+ dataFormat + "'");
 
 		return format.toString();
 	}
