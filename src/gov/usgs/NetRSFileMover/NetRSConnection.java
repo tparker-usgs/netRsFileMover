@@ -1,11 +1,15 @@
 package gov.usgs.NetRSFileMover;
 
+import gov.usgs.util.Log;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.io.CopyStreamEvent;
@@ -18,6 +22,9 @@ import org.apache.commons.net.io.CopyStreamListener;
  * 
  */
 public class NetRSConnection {
+	private final static Logger LOGGER = Log.getLogger(NetRSConnection.class
+			.getName());
+
 	private NetRSSettings settings;
 	private long pollTime;
 	private final long startTime;
@@ -26,15 +33,17 @@ public class NetRSConnection {
 
 	public NetRSConnection(NetRSSettings settings) {
 
+		LOGGER.setLevel(Level.INFO); 
+		
 		this.settings = settings;
 		startTime = System.currentTimeMillis();
 		pollTime = startTime - (startTime % (settings.duration * 1000 * 60));
 
-		
 		fileNameFormat = new SimpleDateFormat(settings.fileNameFormat);
 		fileNameFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-		System.out.println("first poll at " + fileNameFormat.format(new Date(pollTime)));
-		
+		System.out.println("first poll at "
+				+ fileNameFormat.format(new Date(pollTime)));
+
 		ftp = new FTPClient();
 		ftp.setControlKeepAliveReplyTimeout(3 * 1000);
 		ftp.setControlKeepAliveTimeout(30 * 1000);
@@ -50,7 +59,8 @@ public class NetRSConnection {
 		System.out.println("Connecting to " + settings.address);
 		try {
 			ftp.connect(settings.address);
-			System.out.println("trying " + settings.userName + " " + settings.password);
+			System.out.println("trying " + settings.userName + " "
+					+ settings.password);
 			ftp.login(settings.userName, settings.password);
 			ftp.enterLocalPassiveMode();
 		} catch (IOException e) {
@@ -68,7 +78,6 @@ public class NetRSConnection {
 	 */
 	public void poll() {
 
-		
 		// Stop polling if I've been running too long.
 		if (System.currentTimeMillis() > startTime + settings.duration * 1000
 				* 60) {
@@ -78,8 +87,8 @@ public class NetRSConnection {
 		}
 
 		String filename = fileNameFormat.format(new Date(pollTime));
-		System.out.println("Polling " + settings.systemName + " for " + filename);
-
+		System.out.println("Polling " + settings.systemName + " for "
+				+ filename);
 
 		pollTime -= settings.duration * 1000 * 60;
 		FileOutputStream output = null;
@@ -91,15 +100,15 @@ public class NetRSConnection {
 			System.out.println("no need to pull " + filename + " skipping it.");
 			return;
 		}
-		
+
 		try {
 			connect();
 			out = new File(settings.outputDir + File.separator + filename);
 			out.getParentFile().mkdirs();
-			
+
 			output = new FileOutputStream(out);
 			result = ftp.retrieveFile(filename, output);
-			
+
 		} catch (IOException e) {
 			System.err.println(e);
 			System.err.println("Cannot retreive " + filename
