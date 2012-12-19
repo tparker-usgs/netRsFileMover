@@ -1,10 +1,13 @@
 package gov.usgs.NetRSFileMover;
 
 import gov.usgs.util.ConfigFile;
+import gov.usgs.util.Log;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  * Retrieve files from a Trimble NetRS device via FTP
@@ -16,6 +19,8 @@ public final class NetRSFileMover {
 	public static final int DEFAULT_MAX_RUNTIME = 1440;
 	public static final long ONE_DAY = 1000 * 60 * 60 * 24;
 
+	private final static Logger LOGGER = Log.getLogger(NetRSFileMover.class .getName()); 
+	
 	private List<NetRSConnection> receivers;
 
 	/**
@@ -24,6 +29,8 @@ public final class NetRSFileMover {
 	 * @param cf
 	 */
 	public NetRSFileMover(ConfigFile cf) {
+
+		LOGGER.setLevel(Level.INFO); 
 		
 		List<String> receiverList = cf.getList("receiver");
 		receivers = new LinkedList<NetRSConnection>();
@@ -67,6 +74,8 @@ public final class NetRSFileMover {
 		if (args.length != 1)
 			throw new RuntimeException("Usage: NetRSFileMover <config>");
 			
+//		LogManager.getLogManager().setLevel("logging", Level.FINE) 
+		
 		ConfigFile cf = new ConfigFile(args[0]);
 		
 		if (!cf.wasSuccessfullyRead())
