@@ -1,12 +1,12 @@
 package gov.usgs.NetRSFileMover;
 
 import gov.usgs.util.ConfigFile;
-import gov.usgs.util.Log;
 
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.logging.Level;
+import java.util.logging.LogManager;
 import java.util.logging.Logger;
 
 /**
@@ -19,7 +19,7 @@ public final class NetRSFileMover {
 	public static final int DEFAULT_MAX_RUNTIME = 1440;
 	public static final long ONE_DAY = 1000 * 60 * 60 * 24;
 
-	private final static Logger LOGGER = Log.getLogger(NetRSFileMover.class .getName()); 
+	private final static Logger LOGGER = Logger.getLogger(NetRSFileMover.class .getName()); 
 	
 	private List<NetRSConnection> receivers;
 
@@ -30,8 +30,6 @@ public final class NetRSFileMover {
 	 */
 	public NetRSFileMover(ConfigFile cf) {
 
-		LOGGER.setLevel(Level.INFO); 
-		
 		List<String> receiverList = cf.getList("receiver");
 		receivers = new LinkedList<NetRSConnection>();
 		
@@ -71,17 +69,21 @@ public final class NetRSFileMover {
 	 */
 	public static void main(String[] args) {
 		
+		
 		if (args.length != 1)
 			throw new RuntimeException("Usage: NetRSFileMover <config>");
-			
-//		LogManager.getLogManager().setLevel("logging", Level.FINE) 
-		
+
 		ConfigFile cf = new ConfigFile(args[0]);
+		
+		Logger.getLogger("gov.usgs.NetRSFileMover");
+		LogManager.getLogManager().getLogger("gov.usgs.NetRSFileMover").setLevel(Level.FINEST);
 		
 		if (!cf.wasSuccessfullyRead())
 			throw new RuntimeException("Can't read config file " + args[0]);
-		
+
 		NetRSFileMover arch = new NetRSFileMover(cf);
 		arch.go();
+		
+		LOGGER.info("Got everything I'm going to get. Exiting.");
 	}
 }

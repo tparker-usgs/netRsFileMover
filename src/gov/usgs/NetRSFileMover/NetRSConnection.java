@@ -1,14 +1,15 @@
 package gov.usgs.NetRSFileMover;
 
+
 import gov.usgs.util.Log;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.apache.commons.net.ftp.FTPClient;
@@ -25,44 +26,49 @@ public class NetRSConnection {
 	private final static Logger LOGGER = Log.getLogger(NetRSConnection.class
 			.getName());
 
+	private static int ONE_MINUTE = 1000 * 60;
+	private static int ONE_DAY = ONE_MINUTE * 60 * 24;
+
 	private NetRSSettings settings;
 	private long pollTime;
-	private final long startTime;
+	private final long endTime;
+	private final long oldestPoll;
 	private FTPClient ftp;
 	private SimpleDateFormat fileNameFormat;
 
 	public NetRSConnection(NetRSSettings settings) {
 
-		LOGGER.setLevel(Level.INFO); 
-		
 		this.settings = settings;
-		startTime = System.currentTimeMillis();
-		pollTime = startTime - (startTime % (settings.duration * 1000 * 60));
-
+		
+		long startTime = System.currentTimeMillis();
+		endTime = startTime + (settings.duration * ONE_MINUTE);
+		pollTime = startTime - (startTime % (settings.duration * ONE_MINUTE));
+		oldestPoll = startTime - (settings.maxBackfill * ONE_DAY);
+		
 		fileNameFormat = new SimpleDateFormat(settings.fileNameFormat);
 		fileNameFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
-		System.out.println("first poll at "
+		LOGGER.info("first poll at "
 				+ fileNameFormat.format(new Date(pollTime)));
 
 		ftp = new FTPClient();
-		ftp.setControlKeepAliveReplyTimeout(3 * 1000);
-		ftp.setControlKeepAliveTimeout(30 * 1000);
+		
 		ftp.setConnectTimeout(settings.connectTimeout * 1000);
 		if (settings.printHash)
 			ftp.setCopyStreamListener(getCopyStreamListener());
 	}
 
 	private void connect() throws IOException {
-		if (ftp != null && ftp.isConnected())
-			return;
 
-		System.out.println("Connecting to " + settings.address);
+		LOGGER.info("Connecting to " + settings.address);
 		try {
+			System.out.println("bps " + settings.bytesPerSecond);
+			if (settings.bytesPerSecond > 0)
+				ftp.setReceiveBufferSize(settings.bytesPerSecond/4);
+			
 			ftp.connect(settings.address);
-			System.out.println("trying " + settings.userName + " "
-					+ settings.password);
 			ftp.login(settings.userName, settings.password);
 			ftp.enterLocalPassiveMode();
+			
 		} catch (IOException e) {
 			if (ftp.isConnected())
 				ftp.disconnect();
@@ -79,39 +85,47 @@ public class NetRSConnection {
 	public void poll() {
 
 		// Stop polling if I've been running too long.
-		if (System.currentTimeMillis() > startTime + settings.duration * 1000
-				* 60) {
+		if (System.currentTimeMillis() > endTime) {
 			pollTime = Long.MIN_VALUE;
-			System.out.println("I've been running too long. I'll stop");
+			LOGGER.info("I've been running too long. I'll stop");
 			return;
 		}
 
 		String filename = fileNameFormat.format(new Date(pollTime));
-		System.out.println("Polling " + settings.systemName + " for "
-				+ filename);
+		LOGGER.fine("Polling " + settings.systemName + " for " + filename);
 
-		pollTime -= settings.duration * 1000 * 60;
-		FileOutputStream output = null;
+		pollTime -= settings.duration * ONE_MINUTE;
+		OutputStream output = null;
 		boolean result = false;
-		File out = new File(settings.outputDir + File.separator + filename);
+		File out = new File(settings.outputDir + File.separator
+				+ settings.systemName + File.separator + filename);
 
 		// Just return if I already have the file or have gone too far back
 		if (out.exists()) {
-			System.out.println("no need to pull " + filename + " skipping it.");
+			LOGGER.fine("I already have " + filename + " skipping it.");
 			return;
+		} else {
+			LOGGER.fine("I don't have " + filename + " looking for it.");
 		}
 
 		try {
 			connect();
-			out = new File(settings.outputDir + File.separator + filename);
 			out.getParentFile().mkdirs();
-
 			output = new FileOutputStream(out);
+			if (settings.bytesPerSecond > 0)
+				output = new ThrottledOutputStream(output,
+						settings.bytesPerSecond);
+			long now = System.currentTimeMillis();
 			result = ftp.retrieveFile(filename, output);
+			if (result)
+				LOGGER.fine("got file in " + (System.currentTimeMillis() - now)
+						+ " ms");
+			else
+				LOGGER.fine("didn't get file.");
 
 		} catch (IOException e) {
-			System.err.println(e);
-			System.err.println("Cannot retreive " + filename
+			LOGGER.info(e.toString());
+			LOGGER.info("Cannot retreive " + filename
 					+ ". Undeterred I will continue.");
 		} finally {
 			if (output != null)
@@ -119,6 +133,7 @@ public class NetRSConnection {
 					output.close();
 					if (!result)
 						out.delete();
+					ftp.disconnect();
 				} catch (IOException e) {
 				}
 		}
@@ -133,8 +148,7 @@ public class NetRSConnection {
 	 * @return true if I've polled all files
 	 */
 	public boolean polledLast() {
-		return pollTime < startTime
-				- (settings.maxBackfill * 1000 * 60 * 60 * 24);
+		return pollTime < oldestPoll;
 	}
 
 	/**
@@ -145,7 +159,7 @@ public class NetRSConnection {
 	 */
 	private static CopyStreamListener getCopyStreamListener() {
 		return new CopyStreamListener() {
-			private long mBytesTotal = 0;
+			private long kBytesTotal = 0;
 
 			public void bytesTransferred(CopyStreamEvent event) {
 				bytesTransferred(event.getTotalBytesTransferred(),
@@ -154,11 +168,11 @@ public class NetRSConnection {
 
 			public void bytesTransferred(long totalBytesTransferred,
 					int bytesTransferred, long streamSize) {
-				long mBytes = totalBytesTransferred / (1024 * 1024);
-				for (long l = mBytesTotal; l < mBytes; l++) {
+				long kBytes = totalBytesTransferred / (1024);
+				for (long l = kBytesTotal; l < kBytes; l++) {
 					System.out.print("#");
 				}
-				mBytesTotal = mBytes;
+				kBytesTotal = kBytes;
 			}
 		};
 	}
