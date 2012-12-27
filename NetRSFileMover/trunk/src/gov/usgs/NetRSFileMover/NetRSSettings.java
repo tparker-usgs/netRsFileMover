@@ -1,13 +1,11 @@
 package gov.usgs.NetRSFileMover;
 
 import gov.usgs.util.ConfigFile;
-import gov.usgs.util.Log;
 import gov.usgs.util.Util;
 
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.logging.Level;
 import java.util.logging.Logger;
 
 /**
@@ -30,7 +28,7 @@ public class NetRSSettings {
 	public static final boolean DEFAULT_DEPTH_FIRST = false;
 	public static final int DEFAULT_CONNECT_TIMEOUT = 30;
 
-	private final static Logger LOGGER = Log.getLogger(NetRSSettings.class .getName()); 
+	private final static Logger LOGGER = Logger.getLogger(NetRSSettings.class .getName()); 
 	
 	public final String userName;
 	public final String password;
@@ -48,10 +46,9 @@ public class NetRSSettings {
 	public final String outputDir;
 	public final boolean depthFirst;
 	public final int connectTimeout;
+	public final int bytesPerSecond;
 
 	public NetRSSettings(String systemName, ConfigFile cf) {
-		
-		LOGGER.setLevel(Level.INFO); 
 		
 		this.systemName = systemName;
 		if (cf.getString("password") != null) {
@@ -67,6 +64,7 @@ public class NetRSSettings {
 			password = System.getProperty("user.name") + "@" + hostname;
 		}
 
+		bytesPerSecond = Util.stringToInt(cf.getString("bytesPerSecond"), Integer.MIN_VALUE);
 		depthFirst = Util.stringToBoolean(cf.getString("depthFirst"),
 				DEFAULT_DEPTH_FIRST);
 		printHash = Util.stringToBoolean(cf.getString("printHash"),
