@@ -1,4 +1,4 @@
-package gov.usgs.NetRSFileMover;
+package gov.usgs.netRSFileMover;
 
 import gov.usgs.util.ConfigFile;
 import gov.usgs.util.Util;
@@ -6,7 +6,6 @@ import gov.usgs.util.Util;
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.logging.Logger;
 
 /**
  * Settings required to retrieve files from a single NetRS receiver
@@ -16,27 +15,24 @@ import java.util.logging.Logger;
  */
 public class NetRSSettings {
 	public static final String DEFAULT_USER = "netrsFTP";
-	public static final boolean DEFAULT_DO_DELETE = false;
 	public static final int DEFAULT_DURATION = 1440;
 	public static final boolean DEFAULT_USE_PER_DAY_SUBDIRECTORIES = true;
 	public static final boolean DEFAULT_USE_PER_SESSION_ID_SUBDIRECTORIES = true;
-	public static final int DEFAULT_MAX_BACKFILL = 7;
+	public static final int DEFAULT_MAX_DAYS = 7;
 	public static final boolean DEFAULT_PRINT_HASH = true;
 	public static final String DEFAULT_SESSION_ID = "a";
 	public static final String DEFAULT_DATA_FORMAT = "T00";
 	public static final String DEFAULT_OUTPUT_DIR = "output";
 	public static final boolean DEFAULT_DEPTH_FIRST = false;
 	public static final int DEFAULT_CONNECT_TIMEOUT = 30;
+	public static final boolean DEFAULT_PASSIVE_FTP = true;
 
-	private final static Logger LOGGER = Logger.getLogger(NetRSSettings.class .getName()); 
-	
 	public final String userName;
 	public final String password;
-	public final boolean doDelete;
 	public final int duration;
 	public final boolean usePerDaySubdirectories;
 	public final boolean usePerSessionIdSubdirectories;
-	public final int maxBackfill;
+	public final int maxDays;
 	public final String systemName;
 	public final String sessionId;
 	public final String dataFormat;
@@ -47,12 +43,20 @@ public class NetRSSettings {
 	public final boolean depthFirst;
 	public final int connectTimeout;
 	public final int bytesPerSecond;
+	public final boolean passiveFTP;
 
+	/**
+	 * Simple constructor.
+	 * 
+	 * @param systemName
+	 * @param cf
+	 */
 	public NetRSSettings(String systemName, ConfigFile cf) {
-		
+
 		this.systemName = systemName;
 		if (cf.getString("password") != null) {
-			userName = cf.getString("userName");
+			userName = Util.stringToString(cf.getString("userName"),
+					DEFAULT_USER);
 			password = cf.getString("password");
 		} else {
 			userName = "anonymous";
@@ -64,13 +68,12 @@ public class NetRSSettings {
 			password = System.getProperty("user.name") + "@" + hostname;
 		}
 
-		bytesPerSecond = Util.stringToInt(cf.getString("bytesPerSecond"), Integer.MIN_VALUE);
+		bytesPerSecond = Util.stringToInt(cf.getString("bytesPerSecond"),
+				Integer.MIN_VALUE);
 		depthFirst = Util.stringToBoolean(cf.getString("depthFirst"),
 				DEFAULT_DEPTH_FIRST);
 		printHash = Util.stringToBoolean(cf.getString("printHash"),
 				DEFAULT_PRINT_HASH);
-		doDelete = Util.stringToBoolean(cf.getString("doDelete"),
-				DEFAULT_DO_DELETE);
 		duration = Util.stringToInt(cf.getString("duration"), DEFAULT_DURATION);
 		usePerDaySubdirectories = Util.stringToBoolean(
 				cf.getString("perDaySubdirectories"),
@@ -78,11 +81,12 @@ public class NetRSSettings {
 		usePerSessionIdSubdirectories = Util.stringToBoolean(
 				cf.getString("perSessionIdSubdirectories"),
 				DEFAULT_USE_PER_SESSION_ID_SUBDIRECTORIES);
-		maxBackfill = Util.stringToInt(cf.getString("maxBackfill"),
-				DEFAULT_MAX_BACKFILL);
+		maxDays = Util.stringToInt(cf.getString("maxDays"),
+				DEFAULT_MAX_DAYS);
 
-		connectTimeout = Util.stringToInt(cf.getString("connectTimeout"), DEFAULT_CONNECT_TIMEOUT);
-		
+		connectTimeout = Util.stringToInt(cf.getString("connectTimeout"),
+				DEFAULT_CONNECT_TIMEOUT);
+
 		sessionId = Util.stringToString(cf.getString("sessionId"),
 				DEFAULT_SESSION_ID);
 		if (!sessionId.matches("^[a-z]$"))
@@ -99,18 +103,26 @@ public class NetRSSettings {
 
 		address = cf.getString("address");
 
+		passiveFTP = Util.stringToBoolean(cf.getString("passiveFTP"), DEFAULT_PASSIVE_FTP);
+		
 		outputDir = Util.stringToString(cf.getString("outputDir"),
 				DEFAULT_OUTPUT_DIR);
 		File f = new File(outputDir);
 		if (!f.exists())
 			f.mkdir();
-		
+
 		fileNameFormat = getFileNameFormat();
 	}
 
+	/**
+	 * Construct a string, suitable for passing to SimpleDateFormat,
+	 * representing the path of a file on the receiver.
+	 * 
+	 * @return
+	 */
 	public String getFileNameFormat() {
 		StringBuilder format = new StringBuilder();
-		format.append("/yyyyMM/");
+		format.append("yyyyMM/");
 
 		if (usePerDaySubdirectories)
 			format.append("dd/");
@@ -124,16 +136,18 @@ public class NetRSSettings {
 		return format.toString();
 	}
 
+	/**
+	 * construct a human-readable string of this objects settings.
+	 */
 	public String toString() {
 		StringBuffer sb = new StringBuffer();
 		sb.append("userName = " + userName + "\n");
 		sb.append("password = " + password + "\n");
-		sb.append("doDelete = " + doDelete + "\n");
 		sb.append("duration = " + duration + "\n");
 		sb.append("usePerDaySubdirectories = " + usePerDaySubdirectories + "\n");
 		sb.append("usePerSessionIdSubdirectories = "
 				+ usePerSessionIdSubdirectories + "\n");
-		sb.append("maxBackfill = " + maxBackfill + "\n");
+		sb.append("maxDays = " + maxDays + "\n");
 		sb.append("systemName = " + systemName + "\n");
 		sb.append("sessionId = " + sessionId + "\n");
 		sb.append("dataFormat = " + dataFormat + "\n");
@@ -141,5 +155,4 @@ public class NetRSSettings {
 
 		return sb.toString();
 	}
-
 }
