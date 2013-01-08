@@ -83,8 +83,9 @@ public class NetRSConnection {
 		LOGGER.fine("Connecting to " + settings.address);
 		try {
 			if (settings.bytesPerSecond > 0) {
-				int bufferSize = Math.min(settings.bytesPerSecond, 1500);
+				int bufferSize = Math.min(settings.bytesPerSecond * 2, 1460);
 				ftp.setReceiveBufferSize(bufferSize);
+				LOGGER.fine("Receive buffer size = " + bufferSize);
 			}
 
 			ftp.connect(settings.address);
@@ -133,7 +134,7 @@ public class NetRSConnection {
 
 		try {
 			connect();
-		} catch (IOException e1) {
+		} catch (IOException e) {
 			LOGGER.warning("Could not connect to " + settings.systemName);
 		}
 
@@ -167,7 +168,7 @@ public class NetRSConnection {
 		OutputStream output;
 		try {
 			output = new FileOutputStream(tmpFile);
-		} catch (FileNotFoundException e1) {
+		} catch (FileNotFoundException e) {
 			LOGGER.warning("Can't create temp file " + tmpFile);
 			return;
 		}
