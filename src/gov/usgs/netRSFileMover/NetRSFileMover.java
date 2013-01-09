@@ -13,6 +13,8 @@ import java.util.logging.Logger;
 /**
  * Retrieve files from a Trimble NetRS device via FTP
  * 
+ * TODO: add option to resume file transfers
+ * 
  * @author Tom Parker
  */
 public final class NetRSFileMover {
