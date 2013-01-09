@@ -82,11 +82,6 @@ public class NetRSConnection {
 
 		LOGGER.fine("Connecting to " + settings.address);
 		try {
-			if (settings.bytesPerSecond > 0) {
-				int bufferSize = Math.min(settings.bytesPerSecond * 2, 1460);
-				ftp.setReceiveBufferSize(bufferSize);
-				LOGGER.fine("Receive buffer size = " + bufferSize);
-			}
 
 			ftp.connect(settings.address);
 			ftp.login(settings.userName, settings.password);
@@ -96,6 +91,11 @@ public class NetRSConnection {
 			else
 				ftp.enterLocalActiveMode();
 
+			if (settings.bytesPerSecond > 0) {
+				int bufferSize = Math.min(settings.bytesPerSecond * 2, 1460);
+				ftp.setReceiveBufferSize(bufferSize);
+				LOGGER.fine("Receive buffer size = " + bufferSize);
+			}
 		} catch (IOException e) {
 			if (ftp.isConnected())
 				ftp.disconnect();
@@ -193,6 +193,8 @@ public class NetRSConnection {
 			}
 
 		if (result) {
+			if (settings.printHash)
+				System.out.println();
 			LOGGER.fine("got file in " + (System.currentTimeMillis() - now)
 					+ " ms");
 			tmpFile.renameTo(outFile);

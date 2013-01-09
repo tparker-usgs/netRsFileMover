@@ -55,7 +55,7 @@ public class ThrottledOutputStream extends OutputStream {
 	 */
 	public void setTimeWindow(int timeWindow) {
 		timeWindowMS = timeWindow;
-		bytesPerWindow = (bytesPerSecond / 1000) * timeWindowMS;
+		bytesPerWindow = timeWindowMS * bytesPerSecond / 1000;
 
 		LOGGER.finest("I will write no more than " + bytesPerWindow
 				+ " bytes every " + timeWindowMS + "ms.");
