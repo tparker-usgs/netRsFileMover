@@ -26,6 +26,8 @@ public class NetRSSettings {
 	public static final boolean DEFAULT_DEPTH_FIRST = false;
 	public static final int DEFAULT_CONNECT_TIMEOUT = 30;
 	public static final boolean DEFAULT_PASSIVE_FTP = true;
+	public static final int DEFAULT_WINDOW_SIZE = 0;
+	public static final boolean DEFAULT_RESUME_TRANSFER = true;
 
 	public final String userName;
 	public final String password;
@@ -44,6 +46,8 @@ public class NetRSSettings {
 	public final int connectTimeout;
 	public final int bytesPerSecond;
 	public final boolean passiveFTP;
+	public final int windowSize;
+	public final boolean resumeTransfer;
 
 	/**
 	 * Simple constructor.
@@ -74,6 +78,8 @@ public class NetRSSettings {
 				DEFAULT_DEPTH_FIRST);
 		printHash = Util.stringToBoolean(cf.getString("printHash"),
 				DEFAULT_PRINT_HASH);
+		resumeTransfer = Util.stringToBoolean(cf.getString("resumeTransfer"),
+				DEFAULT_RESUME_TRANSFER);
 		duration = Util.stringToInt(cf.getString("duration"), DEFAULT_DURATION);
 		usePerDaySubdirectories = Util.stringToBoolean(
 				cf.getString("perDaySubdirectories"),
@@ -105,6 +111,8 @@ public class NetRSSettings {
 
 		passiveFTP = Util.stringToBoolean(cf.getString("passiveFTP"), DEFAULT_PASSIVE_FTP);
 		
+		windowSize = Util.stringToInt(cf.getString("windowSize"), DEFAULT_WINDOW_SIZE);
+				
 		outputDir = Util.stringToString(cf.getString("outputDir"),
 				DEFAULT_OUTPUT_DIR);
 		File f = new File(outputDir);
