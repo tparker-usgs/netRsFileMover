@@ -3,19 +3,21 @@ package gov.usgs.netRSFileMover;
 import gov.usgs.util.Log;
 
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 import java.util.logging.Logger;
 
+import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.io.CopyStreamEvent;
 import org.apache.commons.net.io.CopyStreamListener;
-
 
 /**
  * A class to hold a FTP connection to a NetRS.
@@ -91,11 +93,12 @@ public class NetRSConnection {
 			else
 				ftp.enterLocalActiveMode();
 
-			if (settings.bytesPerSecond > 0) {
-				int bufferSize = Math.min(settings.bytesPerSecond * 2, 1460);
-				ftp.setReceiveBufferSize(bufferSize);
-				LOGGER.fine("Receive buffer size = " + bufferSize);
-			}
+			// Grrr... This is not guaranteed to work and I can find no way to
+			// tell if it did work. Best to sniff the wire to check. There must
+			// be a better way.
+			if (settings.windowSize > 0)
+				ftp.setReceiveBufferSize(settings.windowSize);
+
 		} catch (IOException e) {
 			if (ftp.isConnected())
 				ftp.disconnect();
@@ -162,12 +165,14 @@ public class NetRSConnection {
 
 		// download to a temp file to help avoid exposing partial files
 		File tmpFile = new File(settings.outputDir + File.separator + "tmp"
-				+ File.separator + settings.systemName + ".tmp");
+				+ File.separator + outFile.getName());
 		tmpFile.getParentFile().mkdirs();
 
 		OutputStream output;
+		long resumeOffset = tmpFile.length();
+		boolean resume = settings.resumeTransfer && resumeOffset > 0;
 		try {
-			output = new FileOutputStream(tmpFile);
+			output = new FileOutputStream(tmpFile, resume);
 		} catch (FileNotFoundException e) {
 			LOGGER.warning("Can't create temp file " + tmpFile);
 			return;
@@ -178,8 +183,13 @@ public class NetRSConnection {
 
 		long now = System.currentTimeMillis();
 
+		if (resume) {
+			LOGGER.info("resuming transfer at " + resumeOffset + " bytes.");
+			ftp.setRestartOffset(resumeOffset);
+		}
 		boolean result = false;
 		try {
+			ftp.setFileType(FTP.BINARY_FILE_TYPE);
 			result = ftp.retrieveFile(remoteFile, output);
 		} catch (IOException e) {
 			LOGGER.warning("Couldn't retrieve " + remoteFile);
@@ -197,13 +207,53 @@ public class NetRSConnection {
 				System.out.println();
 			LOGGER.fine("got file in " + (System.currentTimeMillis() - now)
 					+ " ms");
-			tmpFile.renameTo(outFile);
+			
+			try {
+				moveFile(tmpFile, outFile);
+			} catch (IOException e) {
+				LOGGER.warning("Couldn't write file to "
+						+ outFile.getAbsolutePath() + ". " + e.getMessage());
+			}
+
 		} else {
 			tmpFile.delete();
 			LOGGER.info("Couldn't get file. Server replied: "
 					+ ftp.getReplyString());
 			LOGGER.info("Undeterred I will continue.");
 		}
+	}
+
+	/**
+	 *  copy and remove file. More robust than using .copyTo()
+	 * @param sourceFile
+	 * @param destFile
+	 * @throws IOException
+	 */
+	private void moveFile(File sourceFile, File destFile) throws IOException {
+		File p = destFile.getParentFile();
+		if (!p.exists())
+			p.mkdirs();
+		
+		if (!destFile.exists())
+			destFile.createNewFile();
+		
+		FileChannel source = null;
+		FileChannel dest = null;
+		
+		try {
+			source = new FileInputStream(sourceFile).getChannel();
+			dest = new FileOutputStream(destFile).getChannel();
+			dest.transferFrom(source, 0, source.size());
+		}
+		finally {
+			if (source != null)
+				source.close();
+			
+			if (dest != null)
+				dest.close();
+		}
+		
+		sourceFile.delete();
 	}
 
 	/**
@@ -233,10 +283,14 @@ public class NetRSConnection {
 			public void bytesTransferred(long totalBytesTransferred,
 					int bytesTransferred, long streamSize) {
 				long kBytes = totalBytesTransferred / (1024);
+				
 				for (long l = kBytesTotal; l < kBytes; l++) {
+					if ((kBytesTotal + l) % 1024 == 0)
+						System.out.println();
 					System.out.print("#");
 				}
 				kBytesTotal = kBytes;
+
 			}
 		};
 	}
