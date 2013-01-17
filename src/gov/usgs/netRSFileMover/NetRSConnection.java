@@ -27,7 +27,7 @@ import org.apache.commons.net.io.CopyStreamListener;
  */
 public class NetRSConnection {
 	private static final int ONE_MINUTE = 1000 * 60;
-	private static final int ONE_DAY = ONE_MINUTE * 60 * 24;
+	private static final long ONE_DAY = ONE_MINUTE * 60 * 24;
 
 	private static final Logger LOGGER = Log.getLogger(NetRSConnection.class
 			.getName());
@@ -267,7 +267,7 @@ public class NetRSConnection {
 
 	/**
 	 * create a CopyStreamListener to print hash marks during downloads. Based
-	 * on FTPClient example code.
+	 * on FTPClient sample code.
 	 * 
 	 * @return a hash-printing CopyStreamListener
 	 */
@@ -284,11 +284,9 @@ public class NetRSConnection {
 					int bytesTransferred, long streamSize) {
 				long kBytes = totalBytesTransferred / (1024);
 				
-				for (long l = kBytesTotal; l < kBytes; l++) {
-					if ((kBytesTotal + l) % 1024 == 0)
-						System.out.println();
+				for (long l = kBytesTotal; l < kBytes; l++)
 					System.out.print("#");
-				}
+				
 				kBytesTotal = kBytes;
 
 			}
