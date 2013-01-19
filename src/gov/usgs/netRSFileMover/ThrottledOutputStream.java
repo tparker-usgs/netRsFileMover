@@ -73,9 +73,10 @@ public class ThrottledOutputStream extends OutputStream {
 			bytesWriten = 0;
 
 			long now = System.currentTimeMillis();
-			long sleep = timeWindowMS - (now - windowStart);
+			long sleep = windowStart + timeWindowMS - now;
 			if (sleep > 0) {
 				try {
+					LOGGER.finest("sleeping for " + sleep + " ms.");
 					Thread.sleep(sleep);
 				} catch (InterruptedException e) {
 				}
