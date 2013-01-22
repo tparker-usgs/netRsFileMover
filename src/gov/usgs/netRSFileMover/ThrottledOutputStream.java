@@ -79,9 +79,10 @@ public class ThrottledOutputStream extends OutputStream {
 					LOGGER.finest("sleeping for " + sleep + " ms.");
 					Thread.sleep(sleep);
 				} catch (InterruptedException e) {
+				} finally {
+					windowStart = System.currentTimeMillis();
 				}
 			}
-			windowStart = System.currentTimeMillis();
 		}
 	}
 }
