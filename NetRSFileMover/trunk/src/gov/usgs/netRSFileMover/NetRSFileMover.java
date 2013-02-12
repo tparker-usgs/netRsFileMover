@@ -3,8 +3,6 @@ package gov.usgs.netRSFileMover;
 import gov.usgs.util.ConfigFile;
 import gov.usgs.util.Log;
 
-import java.net.Socket;
-import java.net.SocketException;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
