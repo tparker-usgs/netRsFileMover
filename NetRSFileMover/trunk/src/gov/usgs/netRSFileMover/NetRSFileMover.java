@@ -81,7 +81,7 @@ public final class NetRSFileMover {
 		LogManager.getLogManager().getLogger("gov.usgs.netRSFileMover").setLevel(Level.FINEST);
 		
 		if (args.length != 1) {
-			System.err.print("Usage: NetRSFileMover <config>");
+			System.err.println("Usage: NetRSFileMover <config>");
 			System.exit(1);
 		}
 
