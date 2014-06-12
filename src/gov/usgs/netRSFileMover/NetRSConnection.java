@@ -29,8 +29,7 @@ public class NetRSConnection {
 	private static final int ONE_MINUTE = 1000 * 60;
 	private static final long ONE_DAY = ONE_MINUTE * 60 * 24;
 
-	private static final Logger LOGGER = Log.getLogger(NetRSConnection.class
-			.getName());
+	private static final Logger LOGGER = Log.getLogger(NetRSConnection.class.getName());
 
 	private final NetRSSettings settings;
 	private final SimpleDateFormat fileNameFormat;
@@ -64,8 +63,7 @@ public class NetRSConnection {
 		// Retrieve files that are at most this old
 		oldestPollTime = pollTime - (settings.maxDays * ONE_DAY);
 
-		LOGGER.info("Will retreive files from  "
-				+ fileNameFormat.format(new Date(oldestPollTime)) + " to "
+		LOGGER.info("Will retreive files from  " + fileNameFormat.format(new Date(oldestPollTime)) + " to "
 				+ fileNameFormat.format(new Date(pollTime)));
 
 		ftp = new FTPClient();
@@ -126,8 +124,7 @@ public class NetRSConnection {
 
 		pollTime -= settings.duration * ONE_MINUTE;
 
-		File outFile = new File(settings.outputDir + File.separator
-				+ settings.systemName + File.separator + filename);
+		File outFile = new File(settings.outputDir + File.separator + settings.systemName + File.separator + filename);
 
 		// Just return if I already have the file
 		if (outFile.exists()) {
@@ -164,8 +161,7 @@ public class NetRSConnection {
 	private void getFile(String remoteFile, File outFile) {
 
 		// download to a temp file to help avoid exposing partial files
-		File tmpFile = new File(settings.outputDir + File.separator + "tmp"
-				+ File.separator + outFile.getName());
+		File tmpFile = new File(settings.outputDir + File.separator + "tmp" + File.separator + outFile.getName());
 		tmpFile.getParentFile().mkdirs();
 
 		OutputStream output;
@@ -202,29 +198,30 @@ public class NetRSConnection {
 			} catch (IOException e) {
 			}
 
-		if (result) {
+		if (result && tmpFile.length() > 0) {
 			if (settings.printHash)
 				System.out.println();
-			LOGGER.fine("got file in " + (System.currentTimeMillis() - now)
-					+ " ms");
-			
+			LOGGER.fine("got file in " + (System.currentTimeMillis() - now) + " ms");
+
 			try {
 				moveFile(tmpFile, outFile);
 			} catch (IOException e) {
-				LOGGER.warning("Couldn't write file to "
-						+ outFile.getAbsolutePath() + ". " + e.getMessage());
+				LOGGER.warning("Couldn't write file to " + outFile.getAbsolutePath() + ". " + e.getMessage());
 			}
-
 		} else {
 			tmpFile.delete();
-			LOGGER.info("Couldn't get file. Server replied: "
-					+ ftp.getReplyString());
-			LOGGER.info("Undeterred I will continue.");
+			if (result) {
+				LOGGER.info("Server report sucessful download of zero-length file. That can't be good."); 
+			} else {
+				LOGGER.info("Couldn't get file. Server replied: " + ftp.getReplyString());
+				LOGGER.info("Undeterred I will continue.");
+			}
 		}
 	}
 
 	/**
-	 *  copy and remove file. More robust than using .copyTo()
+	 * copy and remove file. More robust than using .copyTo()
+	 * 
 	 * @param sourceFile
 	 * @param destFile
 	 * @throws IOException
@@ -233,26 +230,25 @@ public class NetRSConnection {
 		File p = destFile.getParentFile();
 		if (!p.exists())
 			p.mkdirs();
-		
+
 		if (!destFile.exists())
 			destFile.createNewFile();
-		
+
 		FileChannel source = null;
 		FileChannel dest = null;
-		
+
 		try {
 			source = new FileInputStream(sourceFile).getChannel();
 			dest = new FileOutputStream(destFile).getChannel();
 			dest.transferFrom(source, 0, source.size());
-		}
-		finally {
+		} finally {
 			if (source != null)
 				source.close();
-			
+
 			if (dest != null)
 				dest.close();
 		}
-		
+
 		sourceFile.delete();
 	}
 
@@ -276,17 +272,15 @@ public class NetRSConnection {
 			private long kBytesTotal = 0;
 
 			public void bytesTransferred(CopyStreamEvent event) {
-				bytesTransferred(event.getTotalBytesTransferred(),
-						event.getBytesTransferred(), event.getStreamSize());
+				bytesTransferred(event.getTotalBytesTransferred(), event.getBytesTransferred(), event.getStreamSize());
 			}
 
-			public void bytesTransferred(long totalBytesTransferred,
-					int bytesTransferred, long streamSize) {
+			public void bytesTransferred(long totalBytesTransferred, int bytesTransferred, long streamSize) {
 				long kBytes = totalBytesTransferred / (1024);
-				
+
 				for (long l = kBytesTotal; l < kBytes; l++)
 					System.out.print("#");
-				
+
 				kBytesTotal = kBytes;
 
 			}
