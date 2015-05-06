@@ -136,6 +136,7 @@ public class NetRSConnection {
 			connect();
 		} catch (IOException e) {
 			LOGGER.warning("Could not connect to " + settings.systemName);
+			return;
 		}
 
 		getFile(filename, outFile);
