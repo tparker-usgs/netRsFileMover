@@ -18,6 +18,8 @@ import org.apache.commons.net.io.CopyStreamListener;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import gov.usgs.volcanoes.core.time.TimeSpan;
+
 /**
  * A class to hold a FTP connection to a NetRS.
  * 
@@ -34,10 +36,12 @@ public class NetRSConnection {
 	private final SimpleDateFormat fileNameFormat;
 
 	private FTPClient ftp;
+	
+	private TimeSpan timeSpan;
 
 	private long pollTime;
-	private final long endTime;
-	private final long oldestPollTime;
+	private long oldestPollTime;
+	private long quittingTime;
 
 	/**
 	 * Simple constructor
@@ -47,23 +51,18 @@ public class NetRSConnection {
 	public NetRSConnection(NetRSSettings settings) {
 
 		this.settings = settings;
+		timeSpan = settings.timeSpan;
+
+		long launchTime = System.currentTimeMillis();
+		quittingTime = launchTime + (settings.duration * ONE_MINUTE);
 
 		fileNameFormat = new SimpleDateFormat(settings.fileNameFormat);
 		fileNameFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
 
-		long startTime = System.currentTimeMillis();
-		endTime = startTime + (settings.duration * ONE_MINUTE);
-
 		// Find start of current file and backup one interval. Do not attempt to
 		// transfer the file that is currently being written.
-		pollTime = startTime - (startTime % (settings.duration * ONE_MINUTE));
-		pollTime -= settings.duration * ONE_MINUTE;
-
-		// Retrieve files that are at most this old
-		oldestPollTime = pollTime - (settings.maxDays * ONE_DAY);
-
-		LOGGER.info("Will retreive files from  " + fileNameFormat.format(new Date(oldestPollTime)) + " to "
-				+ fileNameFormat.format(new Date(pollTime)));
+		
+		this.setTimeSpan(settings.timeSpan);
 
 		ftp = new FTPClient();
 
@@ -112,7 +111,7 @@ public class NetRSConnection {
 	public void poll() {
 
 		// Stop polling if I've been running too long.
-		if (System.currentTimeMillis() > endTime) {
+		if (System.currentTimeMillis() > quittingTime) {
 			pollTime = Long.MIN_VALUE;
 			LOGGER.info("I've been running too long. I'll stop");
 			return;
@@ -285,5 +284,18 @@ public class NetRSConnection {
 
 			}
 		};
+	}
+
+	public void setTimeSpan(TimeSpan timeSpan) {
+		
+		pollTime = timeSpan.endTime - (timeSpan.endTime % (settings.duration * ONE_MINUTE));
+		pollTime -= settings.duration * ONE_MINUTE;
+
+		// Retrieve files that are at most this old
+		oldestPollTime = timeSpan.startTime - (timeSpan.startTime % (settings.duration * ONE_MINUTE));
+
+		LOGGER.info("Will retreive files from  " + fileNameFormat.format(new Date(oldestPollTime)) + " to "
+				+ fileNameFormat.format(new Date(pollTime)));
+
 	}
 }

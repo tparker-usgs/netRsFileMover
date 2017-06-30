@@ -7,7 +7,10 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.martiansoftware.jsap.ParseException;
+
 import gov.usgs.volcanoes.core.configfile.ConfigFile;
+import gov.usgs.volcanoes.core.time.TimeSpan;
 
 /**
  * Retrieve files from a Trimble NetRS device via FTP
@@ -29,8 +32,9 @@ public final class NetRSFileMover {
 	 * simple constructor
 	 * 
 	 * @param configFile
+	 * @throws ParseException 
 	 */
-	public NetRSFileMover(ConfigFile configFile) {
+	public NetRSFileMover(ConfigFile configFile) throws ParseException {
 
 		List<String> receiverList = configFile.getList("receiver");
 		if (receiverList == null || receiverList.size() == 0) {
@@ -46,6 +50,12 @@ public final class NetRSFileMover {
 
 			NetRSConnection connection = new NetRSConnection(settings);
 			receivers.add(connection);
+		}
+	}
+
+	private void setTimeSpan(TimeSpan timeSpan) {
+		for (NetRSConnection connection : receivers) {
+			connection.setTimeSpan(timeSpan);
 		}
 	}
 
@@ -71,22 +81,25 @@ public final class NetRSFileMover {
 	 * 
 	 * @param args
 	 */
-	public static void main(String[] args) {
-		
-		if (args.length != 1) {
-			System.err.println("Usage: NetRSFileMover <config>");
-			System.exit(1);
-		}
+	public static void main(String[] args) throws Exception {
+	    final NetRSFileMoverArgs config = new NetRSFileMoverArgs(args);
 
-		ConfigFile cf = new ConfigFile(args[0]);
-		if (!cf.wasSuccessfullyRead()) {
-			System.err.print("Can't read config file " + args[0]);
-			System.exit(1);
-		}
+	    ConfigFile cf = null;
+	    cf = new ConfigFile(config.configFileName);
+	    if (!cf.wasSuccessfullyRead()) {
+	      LOGGER.error("Couldn't find config file " + config.configFileName
+	          + ". Use '-c' to create an example config.");
+	      System.exit(1);
+	    }
 
-		NetRSFileMover arch = new NetRSFileMover(cf);
+	    NetRSFileMover arch = new NetRSFileMover(cf);
+	    if (config.timeSpan != null) {
+	    	arch.setTimeSpan(config.timeSpan);
+	    }
+	    
 		arch.go();
 
 		LOGGER.info("Got everything I'm going to get. Exiting.");
 	}
+
 }
