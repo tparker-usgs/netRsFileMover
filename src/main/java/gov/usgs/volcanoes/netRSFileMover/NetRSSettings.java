@@ -1,4 +1,4 @@
-package main.java.gov.usgs.volcanoes.netRSFileMover;
+package gov.usgs.volcanoes.netRSFileMover;
 
 import gov.usgs.util.ConfigFile;
 import gov.usgs.util.Util;

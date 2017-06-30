@@ -161,6 +161,8 @@
                             <artifactSet>
                                 <includes>
                                     <include>gov.usgs.volcanoes:volcano-core</include>
+                                    <include>gov.usgs.volcanoes:usgs</include>
+                                    <include>commons-net:commons-net</include>
                                 </includes>
                            </artifactSet>
                         </configuration>
@@ -269,14 +271,19 @@
 
     <dependencies>
         <dependency>
-            <groupId>gov.usgs.volcanoes</groupId>
-            <artifactId>usgs</artifactId>
-            <version>1.3.10</version>
-        </dependency>
-        <dependency>
             <groupId>commons-net</groupId>
             <artifactId>commons-net</artifactId>
             <version>3.6</version>
+        </dependency>
+        <dependency>
+        	<groupId>gov.usgs.volcanoes</groupId>
+        	<artifactId>volcano-core</artifactId>
+        	<version>[1.3.8,)</version>
+        </dependency>
+        <dependency>
+        	<groupId>gov.usgs.volcanoes</groupId>
+        	<artifactId>usgs</artifactId>
+        	<version>1.3.10</version>
         </dependency>
     </dependencies>
 </project>

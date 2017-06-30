@@ -1,4 +1,4 @@
-package main.java.gov.usgs.volcanoes.netRSFileMover;
+package gov.usgs.volcanoes.netRSFileMover;
 
 import java.io.IOException;
 import java.io.OutputStream;

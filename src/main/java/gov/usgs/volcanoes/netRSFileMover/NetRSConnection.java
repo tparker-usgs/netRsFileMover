@@ -1,6 +1,4 @@
-package main.java.gov.usgs.volcanoes.netRSFileMover;
-
-import gov.usgs.util.Log;
+package gov.usgs.volcanoes.netRSFileMover;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -18,6 +16,8 @@ import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.io.CopyStreamEvent;
 import org.apache.commons.net.io.CopyStreamListener;
+
+import gov.usgs.util.Log;
 
 /**
  * A class to hold a FTP connection to a NetRS.
