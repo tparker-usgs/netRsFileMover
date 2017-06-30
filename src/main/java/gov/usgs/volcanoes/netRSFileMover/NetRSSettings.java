@@ -1,11 +1,11 @@
 package gov.usgs.volcanoes.netRSFileMover;
 
-import gov.usgs.util.ConfigFile;
-import gov.usgs.util.Util;
-
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+
+import gov.usgs.volcanoes.core.configfile.ConfigFile;
+import gov.usgs.volcanoes.core.util.StringUtils;
 
 /**
  * Settings required to retrieve files from a single NetRS receiver
@@ -59,7 +59,7 @@ public class NetRSSettings {
 
 		this.systemName = systemName;
 		if (cf.getString("password") != null) {
-			userName = Util.stringToString(cf.getString("userName"),
+			userName = StringUtils.stringToString(cf.getString("userName"),
 					DEFAULT_USER);
 			password = cf.getString("password");
 		} else {
@@ -72,35 +72,35 @@ public class NetRSSettings {
 			password = System.getProperty("user.name") + "@" + hostname;
 		}
 
-		bytesPerSecond = Util.stringToInt(cf.getString("bytesPerSecond"),
+		bytesPerSecond = StringUtils.stringToInt(cf.getString("bytesPerSecond"),
 				Integer.MIN_VALUE);
-		depthFirst = Util.stringToBoolean(cf.getString("depthFirst"),
+		depthFirst = StringUtils.stringToBoolean(cf.getString("depthFirst"),
 				DEFAULT_DEPTH_FIRST);
-		printHash = Util.stringToBoolean(cf.getString("printHash"),
+		printHash = StringUtils.stringToBoolean(cf.getString("printHash"),
 				DEFAULT_PRINT_HASH);
-		resumeTransfer = Util.stringToBoolean(cf.getString("resumeTransfer"),
+		resumeTransfer = StringUtils.stringToBoolean(cf.getString("resumeTransfer"),
 				DEFAULT_RESUME_TRANSFER);
-		duration = Util.stringToInt(cf.getString("duration"), DEFAULT_DURATION);
-		usePerDaySubdirectories = Util.stringToBoolean(
+		duration = StringUtils.stringToInt(cf.getString("duration"), DEFAULT_DURATION);
+		usePerDaySubdirectories = StringUtils.stringToBoolean(
 				cf.getString("perDaySubdirectories"),
 				DEFAULT_USE_PER_DAY_SUBDIRECTORIES);
-		usePerSessionIdSubdirectories = Util.stringToBoolean(
+		usePerSessionIdSubdirectories = StringUtils.stringToBoolean(
 				cf.getString("perSessionIdSubdirectories"),
 				DEFAULT_USE_PER_SESSION_ID_SUBDIRECTORIES);
-		maxDays = Util.stringToInt(cf.getString("maxDays"),
+		maxDays = StringUtils.stringToInt(cf.getString("maxDays"),
 				DEFAULT_MAX_DAYS);
 
-		connectTimeout = Util.stringToInt(cf.getString("connectTimeout"),
+		connectTimeout = StringUtils.stringToInt(cf.getString("connectTimeout"),
 				DEFAULT_CONNECT_TIMEOUT);
 
-		sessionId = Util.stringToString(cf.getString("sessionId"),
+		sessionId = StringUtils.stringToString(cf.getString("sessionId"),
 				DEFAULT_SESSION_ID);
 		if (!sessionId.matches("^[a-z]$"))
 			throw new RuntimeException(
 					"sessionId must be a single lowercase letter. " + sessionId
 							+ " won't work.");
 
-		dataFormat = Util.stringToString(cf.getString("dataFormat"),
+		dataFormat = StringUtils.stringToString(cf.getString("dataFormat"),
 				DEFAULT_DATA_FORMAT);
 		if (!dataFormat.equals("T00") && !dataFormat.equals("Binex"))
 			throw new RuntimeException(
@@ -109,11 +109,11 @@ public class NetRSSettings {
 
 		address = cf.getString("address");
 
-		passiveFTP = Util.stringToBoolean(cf.getString("passiveFTP"), DEFAULT_PASSIVE_FTP);
+		passiveFTP = StringUtils.stringToBoolean(cf.getString("passiveFTP"), DEFAULT_PASSIVE_FTP);
 		
-		windowSize = Util.stringToInt(cf.getString("windowSize"), DEFAULT_WINDOW_SIZE);
+		windowSize = StringUtils.stringToInt(cf.getString("windowSize"), DEFAULT_WINDOW_SIZE);
 				
-		outputDir = Util.stringToString(cf.getString("outputDir"),
+		outputDir = StringUtils.stringToString(cf.getString("outputDir"),
 				DEFAULT_OUTPUT_DIR);
 		File f = new File(outputDir);
 		if (!f.exists())

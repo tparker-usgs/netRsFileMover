@@ -1,14 +1,13 @@
 package gov.usgs.volcanoes.netRSFileMover;
 
-import gov.usgs.util.ConfigFile;
-import gov.usgs.util.Log;
-
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.logging.Level;
-import java.util.logging.LogManager;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import gov.usgs.volcanoes.core.configfile.ConfigFile;
 
 /**
  * Retrieve files from a Trimble NetRS device via FTP
@@ -22,8 +21,7 @@ public final class NetRSFileMover {
 	public static final int DEFAULT_MAX_RUNTIME = 60 * 60 * 24;
 	public static final int ONE_DAY = 1000 * 60 * 60 * 24;
 
-	private final static Logger LOGGER = Log.getLogger(NetRSFileMover.class
-			.getName());
+	private static final Logger LOGGER = LoggerFactory.getLogger(NetRSFileMover.class);
 
 	private List<NetRSConnection> receivers;
 
@@ -43,7 +41,6 @@ public final class NetRSFileMover {
 
 		receivers = new LinkedList<NetRSConnection>();
 		for (String receiverName : configFile.getList("receiver")) {
-
 			NetRSSettings settings = new NetRSSettings(receiverName,
 					configFile.getSubConfig(receiverName, true));
 
@@ -75,8 +72,6 @@ public final class NetRSFileMover {
 	 * @param args
 	 */
 	public static void main(String[] args) {
-		Log.getLogger("gov.usgs.netRSFileMover");
-		LogManager.getLogManager().getLogger("gov.usgs.netRSFileMover").setLevel(Level.FINEST);
 		
 		if (args.length != 1) {
 			System.err.println("Usage: NetRSFileMover <config>");
@@ -88,16 +83,7 @@ public final class NetRSFileMover {
 			System.err.print("Can't read config file " + args[0]);
 			System.exit(1);
 		}
-		
-		if (cf.getList("debug") != null)
-		{
-			for (String name : cf.getList("debug")) {
-				Logger l = Log.getLogger(name);
-				l.setLevel(Level.ALL);
-				LOGGER.fine("debugging " + name);
-			}
-		}
-		
+
 		NetRSFileMover arch = new NetRSFileMover(cf);
 		arch.go();
 

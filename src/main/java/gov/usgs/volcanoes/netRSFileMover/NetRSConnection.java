@@ -10,14 +10,13 @@ import java.nio.channels.FileChannel;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
-import java.util.logging.Logger;
 
 import org.apache.commons.net.ftp.FTP;
 import org.apache.commons.net.ftp.FTPClient;
 import org.apache.commons.net.io.CopyStreamEvent;
 import org.apache.commons.net.io.CopyStreamListener;
-
-import gov.usgs.util.Log;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A class to hold a FTP connection to a NetRS.
@@ -29,7 +28,7 @@ public class NetRSConnection {
 	private static final int ONE_MINUTE = 1000 * 60;
 	private static final long ONE_DAY = ONE_MINUTE * 60 * 24;
 
-	private static final Logger LOGGER = Log.getLogger(NetRSConnection.class.getName());
+	private static final Logger LOGGER = LoggerFactory.getLogger(NetRSConnection.class);
 
 	private final NetRSSettings settings;
 	private final SimpleDateFormat fileNameFormat;
@@ -80,7 +79,7 @@ public class NetRSConnection {
 	 */
 	private void connect() throws IOException {
 
-		LOGGER.fine("Connecting to " + settings.address);
+		LOGGER.debug("Connecting to " + settings.address);
 		try {
 
 			ftp.connect(settings.address);
@@ -128,14 +127,14 @@ public class NetRSConnection {
 
 		// Just return if I already have the file
 		if (outFile.exists()) {
-			LOGGER.fine("I already have " + filename + " skipping it.");
+			LOGGER.debug("I already have " + filename + " skipping it.");
 			return;
 		}
 
 		try {
 			connect();
 		} catch (IOException e) {
-			LOGGER.warning("Could not connect to " + settings.systemName);
+			LOGGER.error("Could not connect to " + settings.systemName);
 			return;
 		}
 
@@ -171,7 +170,7 @@ public class NetRSConnection {
 		try {
 			output = new FileOutputStream(tmpFile, resume);
 		} catch (FileNotFoundException e) {
-			LOGGER.warning("Can't create temp file " + tmpFile);
+			LOGGER.error("Can't create temp file " + tmpFile);
 			return;
 		}
 
@@ -189,7 +188,7 @@ public class NetRSConnection {
 			ftp.setFileType(FTP.BINARY_FILE_TYPE);
 			result = ftp.retrieveFile(remoteFile, output);
 		} catch (IOException e) {
-			LOGGER.warning("Couldn't retrieve " + remoteFile);
+			LOGGER.error("Couldn't retrieve " + remoteFile);
 			e.printStackTrace();
 		}
 
@@ -202,17 +201,17 @@ public class NetRSConnection {
 		if (result && tmpFile.length() > 0) {
 			if (settings.printHash)
 				System.out.println();
-			LOGGER.fine("got file in " + (System.currentTimeMillis() - now) + " ms");
+			LOGGER.debug("got file in " + (System.currentTimeMillis() - now) + " ms");
 
 			try {
 				moveFile(tmpFile, outFile);
 			} catch (IOException e) {
-				LOGGER.warning("Couldn't write file to " + outFile.getAbsolutePath() + ". " + e.getMessage());
+				LOGGER.error("Couldn't write file to " + outFile.getAbsolutePath() + ". " + e.getMessage());
 			}
 		} else {
 			tmpFile.delete();
 			if (result) {
-				LOGGER.info("Server report sucessful download of zero-length file. That can't be good."); 
+				LOGGER.info("Server report sucessful download of zero-length file. That can't be good.");
 			} else {
 				LOGGER.info("Couldn't get file. Server replied: " + ftp.getReplyString());
 				LOGGER.info("Undeterred I will continue.");
