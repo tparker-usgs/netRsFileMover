@@ -32,6 +32,8 @@ public class NetRSSettings {
 	public static final int DEFAULT_WINDOW_SIZE = 0;
 	public static final boolean DEFAULT_RESUME_TRANSFER = true;
 	public static final String DEFAULT_TIME_SPAN = "-7d";
+	public static final String DEFAULT_RECEIVER_TYPE = "NetRS";
+	
 
 	public final String userName;
 	public final String password;
@@ -52,6 +54,7 @@ public class NetRSSettings {
 	public final int windowSize;
 	public final boolean resumeTransfer;
 	public final TimeSpan timeSpan;
+	public final ReceiverType receiverType;
 
 	/**
 	 * Simple constructor.
@@ -108,7 +111,11 @@ public class NetRSSettings {
 		if (!f.exists())
 			f.mkdir();
 
+		String typeString = StringUtils.stringToString(cf.getString("recevierType"), DEFAULT_RECEIVER_TYPE);
+		receiverType = ReceiverType.parse(typeString);
+		
 		fileNameFormat = getFileNameFormat();
+		
 	}
 
 	/**
@@ -147,6 +154,7 @@ public class NetRSSettings {
 		sb.append("sessionId = " + sessionId + "\n");
 		sb.append("dataFormat = " + dataFormat + "\n");
 		sb.append("address = " + address + "\n");
+		sb.append("receiverType = " + receiverType + "\n");
 
 		return sb.toString();
 	}
