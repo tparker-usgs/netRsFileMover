@@ -22,9 +22,9 @@ public enum ReceiverType {
 	public String getTypeString() {
 		return typeString;
 	}
-	
+
 	public String toString() {
 		return typeString;
 	}
-
+	
 }

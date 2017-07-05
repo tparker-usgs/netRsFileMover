@@ -2,7 +2,9 @@ package gov.usgs.volcanoes.netRSFileMover;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.util.logging.Logger;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A class to write to an output stream at a specified rate. Intended to be used
@@ -25,8 +27,7 @@ public class ThrottledOutputStream extends OutputStream {
 	private long windowStart;
 	private long bytesWriten;
 
-	private final static Logger LOGGER = Logger.getLogger(NetRSSettings.class
-			.getName());
+	private static final Logger LOGGER = LoggerFactory.getLogger(ThrottledOutputStream.class);
 
 	/**
 	 * Simple constructor
@@ -38,8 +39,7 @@ public class ThrottledOutputStream extends OutputStream {
 	 */
 	ThrottledOutputStream(OutputStream outStream, int bytesPerSecond) {
 
-		LOGGER.finest("constructing ThrottledOutputStream at " + bytesPerSecond
-				+ " bps");
+		LOGGER.debug("constructing ThrottledOutputStream at " + bytesPerSecond + " bps");
 		this.bytesPerSecond = bytesPerSecond;
 		this.outStream = outStream;
 		windowStart = System.currentTimeMillis();
@@ -57,8 +57,7 @@ public class ThrottledOutputStream extends OutputStream {
 		timeWindowMS = timeWindow;
 		bytesPerWindow = timeWindowMS * bytesPerSecond / 1000;
 
-		LOGGER.finest("I will write no more than " + bytesPerWindow
-				+ " bytes every " + timeWindowMS + "ms.");
+		LOGGER.debug("I will write no more than " + bytesPerWindow + " bytes every " + timeWindowMS + "ms.");
 	}
 
 	/**
@@ -73,10 +72,10 @@ public class ThrottledOutputStream extends OutputStream {
 			bytesWriten = 0;
 
 			long now = System.currentTimeMillis();
-			long sleep = windowStart + timeWindowMS - now;
+			long sleep = now - (windowStart + timeWindowMS);
 			if (sleep > 0) {
 				try {
-					LOGGER.finest("sleeping for " + sleep + " ms.");
+					// LOGGER.debug("sleeping for " + sleep + " ms.");
 					Thread.sleep(sleep);
 				} catch (InterruptedException e) {
 				} finally {

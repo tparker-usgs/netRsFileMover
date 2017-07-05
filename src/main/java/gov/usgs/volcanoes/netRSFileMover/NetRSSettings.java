@@ -33,7 +33,7 @@ public class NetRSSettings {
 	public static final boolean DEFAULT_RESUME_TRANSFER = true;
 	public static final String DEFAULT_TIME_SPAN = "-7d";
 	public static final String DEFAULT_RECEIVER_TYPE = "NetRS";
-	
+	public static final boolean DEFAULT_STRICT_REPLY_PARSING = true;
 
 	public final String userName;
 	public final String password;
@@ -55,6 +55,7 @@ public class NetRSSettings {
 	public final boolean resumeTransfer;
 	public final TimeSpan timeSpan;
 	public final ReceiverType receiverType;
+	public boolean strictReplyParsing;
 
 	/**
 	 * Simple constructor.
@@ -83,6 +84,8 @@ public class NetRSSettings {
 		depthFirst = StringUtils.stringToBoolean(cf.getString("depthFirst"), DEFAULT_DEPTH_FIRST);
 		printHash = StringUtils.stringToBoolean(cf.getString("printHash"), DEFAULT_PRINT_HASH);
 		resumeTransfer = StringUtils.stringToBoolean(cf.getString("resumeTransfer"), DEFAULT_RESUME_TRANSFER);
+		strictReplyParsing = StringUtils.stringToBoolean(cf.getString("strictReplyParsing"), DEFAULT_STRICT_REPLY_PARSING);
+
 		duration = StringUtils.stringToInt(cf.getString("duration"), DEFAULT_DURATION);
 		usePerDaySubdirectories = StringUtils.stringToBoolean(cf.getString("perDaySubdirectories"),
 				DEFAULT_USE_PER_DAY_SUBDIRECTORIES);
@@ -93,11 +96,9 @@ public class NetRSSettings {
 		connectTimeout = StringUtils.stringToInt(cf.getString("connectTimeout"), DEFAULT_CONNECT_TIMEOUT);
 
 		sessionId = StringUtils.stringToString(cf.getString("sessionId"), DEFAULT_SESSION_ID);
-		if (!sessionId.matches("^[a-z]$"))
-			throw new RuntimeException("sessionId must be a single lowercase letter. " + sessionId + " won't work.");
 
 		dataFormat = StringUtils.stringToString(cf.getString("dataFormat"), DEFAULT_DATA_FORMAT);
-		if (!dataFormat.equals("T00") && !dataFormat.equals("Binex"))
+		if (!(dataFormat.equals("T00") || dataFormat.equals("T02") || dataFormat.equals("Binex")))
 			throw new RuntimeException("dataFormat must be either T00 or Binex. " + dataFormat + " doesn't cut it.");
 
 		address = cf.getString("address");
@@ -111,7 +112,7 @@ public class NetRSSettings {
 		if (!f.exists())
 			f.mkdir();
 
-		String typeString = StringUtils.stringToString(cf.getString("recevierType"), DEFAULT_RECEIVER_TYPE);
+		String typeString = StringUtils.stringToString(cf.getString("receiverType"), DEFAULT_RECEIVER_TYPE);
 		receiverType = ReceiverType.parse(typeString);
 		
 		fileNameFormat = getFileNameFormat();
@@ -126,6 +127,9 @@ public class NetRSSettings {
 	 */
 	public String getFileNameFormat() {
 		StringBuilder format = new StringBuilder();
+		if (receiverType == ReceiverType.NETR9)
+			format.append("'Internal/'");
+		
 		format.append("yyyyMM/");
 
 		if (usePerDaySubdirectories)
@@ -133,7 +137,6 @@ public class NetRSSettings {
 
 		if (usePerSessionIdSubdirectories)
 			format.append("'" + sessionId + "'/");
-
 		format.append("'" + systemName + "'yyyyMMddHHmm'" + sessionId + "." + dataFormat + "'");
 
 		return format.toString();
@@ -155,6 +158,7 @@ public class NetRSSettings {
 		sb.append("dataFormat = " + dataFormat + "\n");
 		sb.append("address = " + address + "\n");
 		sb.append("receiverType = " + receiverType + "\n");
+		sb.append("strictReplyParsing = " + strictReplyParsing + "\n");
 
 		return sb.toString();
 	}

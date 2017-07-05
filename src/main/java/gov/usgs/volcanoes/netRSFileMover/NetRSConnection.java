@@ -67,6 +67,7 @@ public class NetRSConnection {
 		ftp = new FTPClient();
 
 		ftp.setConnectTimeout(settings.connectTimeout * 1000);
+		ftp.setStrictReplyParsing(settings.strictReplyParsing);
 		if (settings.printHash)
 			ftp.setCopyStreamListener(getCopyStreamListener());
 	}
@@ -119,7 +120,7 @@ public class NetRSConnection {
 
 		String filename = fileNameFormat.format(new Date(pollTime));
 		LOGGER.info("Polling " + settings.systemName + " for " + filename);
-
+		LOGGER.debug(settings.toString());
 		pollTime -= settings.duration * ONE_MINUTE;
 
 		File outFile = new File(settings.outputDir + File.separator + settings.systemName + File.separator + filename);
