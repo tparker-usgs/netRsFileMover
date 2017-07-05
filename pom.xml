@@ -5,7 +5,7 @@
   <groupId>gov.usgs.volcanoes</groupId>
   <artifactId>netRsFileMover</artifactId>
   <packaging>jar</packaging>
-  <version>1.1-SNAPSHOT</version>
+  <version>1.1</version>
 
   <name>netRsFileMover</name>
   <url>https://github.com/tparker-usgs/netRsFileMover/</url>
