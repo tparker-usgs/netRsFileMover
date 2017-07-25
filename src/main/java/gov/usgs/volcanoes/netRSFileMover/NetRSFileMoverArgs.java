@@ -6,6 +6,14 @@
 
 package gov.usgs.volcanoes.netRSFileMover;
 
+import java.util.Arrays;
+import java.util.List;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import com.martiansoftware.jsap.FlaggedOption;
+import com.martiansoftware.jsap.JSAP;
 import com.martiansoftware.jsap.JSAPResult;
 import com.martiansoftware.jsap.Parameter;
 
@@ -13,15 +21,9 @@ import gov.usgs.volcanoes.core.args.Args;
 import gov.usgs.volcanoes.core.args.Arguments;
 import gov.usgs.volcanoes.core.args.decorator.ConfigFileArg;
 import gov.usgs.volcanoes.core.args.decorator.CreateConfigArg;
-import gov.usgs.volcanoes.core.args.decorator.DateRangeArg;
 import gov.usgs.volcanoes.core.args.decorator.TimeSpanArg;
 import gov.usgs.volcanoes.core.args.decorator.VerboseArg;
 import gov.usgs.volcanoes.core.time.TimeSpan;
-
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import java.util.Date;
 
 /**
  * Argument processor for Pensive.
@@ -39,7 +41,9 @@ public class NetRSFileMoverArgs {
 	/** format of time on cmd line */
 	public static final String INPUT_TIME_FORMAT = "yyyyMMdd";
 
-	private static final Parameter[] PARAMETERS = new Parameter[] {};
+	private static final Parameter[] PARAMETERS = new Parameter[] {
+        new FlaggedOption("station", JSAP.STRING_PARSER, JSAP.NO_DEFAULT, JSAP.NOT_REQUIRED, 's', "station", "Station to fetch. May be repeated for multiple stations. If not provided, all stations in the config will be reteived."),
+	};
 
 	/** If true, log more. */
 	public final boolean verbose;
@@ -49,6 +53,9 @@ public class NetRSFileMoverArgs {
 
 	/** my config file. */
 	public final String configFileName;
+
+	/** stations to fetch. */
+	public final List<String> stations;
 
 	/**
 	 * Class constructor.
@@ -77,11 +84,15 @@ public class NetRSFileMoverArgs {
 			LOGGER.debug("Setting: timeSpan={}", timeSpan);
 		}
 
+		stations = Arrays.asList(jsapResult.getStringArray("station"));
+        LOGGER.debug("Setting: station={}",  stations);
+		
 		configFileName = jsapResult.getString("config-filename");
 		LOGGER.debug("Setting: config-filename={}", configFileName);
 
 		if (jsapResult.getBoolean("create-config") || jsapResult.getBoolean("help")) {
 			System.exit(1);
 		}
+		
 	}
 }

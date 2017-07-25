@@ -20,86 +20,92 @@ import gov.usgs.volcanoes.core.time.TimeSpan;
  * @author Tom Parker
  */
 public final class NetRSFileMover {
-	public static final boolean DEFAULT_BACKFILL_FIRST = true;
-	public static final int DEFAULT_MAX_RUNTIME = 60 * 60 * 24;
-	public static final int ONE_DAY = 1000 * 60 * 60 * 24;
+  public static final boolean DEFAULT_BACKFILL_FIRST = true;
+  public static final int DEFAULT_MAX_RUNTIME = 60 * 60 * 24;
+  public static final int ONE_DAY = 1000 * 60 * 60 * 24;
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(NetRSFileMover.class);
+  private static final Logger LOGGER = LoggerFactory.getLogger(NetRSFileMover.class);
 
-	private List<NetRSConnection> receivers;
+  private List<NetRSConnection> receivers;
 
-	/**
-	 * simple constructor
-	 * 
-	 * @param configFile
-	 * @throws ParseException 
-	 */
-	public NetRSFileMover(ConfigFile configFile) throws ParseException {
+  /**
+   * simple constructor
+   * 
+   * @param configFile
+   * @throws ParseException
+   */
+  public NetRSFileMover(ConfigFile configFile, List<String> selectedReceivers) throws ParseException {
 
-		List<String> receiverList = configFile.getList("receiver");
-		if (receiverList == null || receiverList.size() == 0) {
-			System.err
-					.println("I didn't find any receiver directives. Guess I'm done.");
-			System.exit(1);
-		}
+    List<String> receiverList = configFile.getList("receiver");
+    if (receiverList == null || receiverList.size() == 0) {
+      System.err.println("I didn't find any receiver directives. Guess I'm done.");
+      System.exit(1);
+    }
 
-		receivers = new LinkedList<NetRSConnection>();
-		for (String receiverName : configFile.getList("receiver")) {
-			NetRSSettings settings = new NetRSSettings(receiverName,
-					configFile.getSubConfig(receiverName, true));
+    receivers = new LinkedList<NetRSConnection>();
+    System.out.println("TOMP: " + selectedReceivers);
+    for (String receiverName : configFile.getList("receiver")) {
+      if (selectedReceivers != null && !selectedReceivers.contains(receiverName)) {
+        System.out.println("Skipping " + receiverName);
+        continue;
+      }
+      NetRSSettings settings =
+          new NetRSSettings(receiverName, configFile.getSubConfig(receiverName, true));
 
-			NetRSConnection connection = new NetRSConnection(settings);
-			receivers.add(connection);
-		}
-	}
+      NetRSConnection connection = new NetRSConnection(settings);
+      receivers.add(connection);
+    }
+  }
 
-	private void setTimeSpan(TimeSpan timeSpan) {
-		for (NetRSConnection connection : receivers) {
-			connection.setTimeSpan(timeSpan);
-		}
-	}
 
-	/**
-	 * Do the work
-	 */
-	private void go() {
-		while (!receivers.isEmpty()) {
-			Iterator<NetRSConnection> it = receivers.iterator();
+  private void setTimeSpan(TimeSpan timeSpan) {
+    for (NetRSConnection connection : receivers) {
+      connection.setTimeSpan(timeSpan);
+    }
+  }
 
-			while (it.hasNext()) {
-				NetRSConnection receiver = it.next();
-				receiver.poll();
+  /**
+   * Do the work
+   */
+  private void go() {
+    while (!receivers.isEmpty()) {
+      Iterator<NetRSConnection> it = receivers.iterator();
 
-				if (receiver.polledLast())
-					it.remove();
-			}
-		}
-	}
+      while (it.hasNext()) {
+        NetRSConnection receiver = it.next();
+        receiver.poll();
 
-	/**
-	 * Main method. Always a good place to start.
-	 * 
-	 * @param args
-	 */
-	public static void main(String[] args) throws Exception {
-	    final NetRSFileMoverArgs config = new NetRSFileMoverArgs(args);
+        if (receiver.polledLast())
+          it.remove();
+      }
+    }
+  }
 
-	    ConfigFile cf = null;
-	    cf = new ConfigFile(config.configFileName);
-	    if (!cf.wasSuccessfullyRead()) {
-	      LOGGER.error("Couldn't find config file " + config.configFileName
-	          + ". Use '-c' to create an example config.");
-	      System.exit(1);
-	    }
+  /**
+   * Main method. Always a good place to start.
+   * 
+   * @param args
+   */
+  public static void main(String[] args) throws Exception {
+    final NetRSFileMoverArgs config = new NetRSFileMoverArgs(args);
 
-	    NetRSFileMover arch = new NetRSFileMover(cf);
-	    if (config.timeSpan != null) {
-	    	arch.setTimeSpan(config.timeSpan);
-	    }
-	    
-		arch.go();
+    ConfigFile cf = null;
+    cf = new ConfigFile(config.configFileName);
+    if (!cf.wasSuccessfullyRead()) {
+      LOGGER.error("Couldn't find config file " + config.configFileName
+          + ". Use '-c' to create an example config.");
+      System.exit(1);
+    }
 
-		LOGGER.info("Got everything I'm going to get. Exiting.");
-	}
+    NetRSFileMover arch = new NetRSFileMover(cf, config.stations);
+    if (config.timeSpan != null) {
+      LOGGER.debug("Setting time span = {}", config.timeSpan);
+      arch.setTimeSpan(config.timeSpan);
+    }
+
+    arch.go();
+
+    LOGGER.info("Got everything I'm going to get. Exiting.");
+  }
 
 }
